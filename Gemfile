@@ -9,5 +9,6 @@ gem 'rss'
 group :test do
   gem 'rspec'
   gem 'rubocop', '~> 1.56.0'
+  gem 'simplecov'
   gem 'webmock'
 end
