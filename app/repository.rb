@@ -18,4 +18,10 @@ class HttpFeedRepository
       )
     end
   end
+
+  def list_between(uri, start_at, end_at)
+    list(uri).select do |post|
+      post.published_at.between?(start_at, end_at)
+    end
+  end
 end

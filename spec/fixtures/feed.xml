@@ -1,0 +1,610 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/"><channel><title>弦而時習之</title><link>https://blog.aotoki.me/</link><description>Recent content on 弦而時習之</description><generator>Hugo -- gohugo.io</generator><language>zh-TW</language><managingEditor>contact@aotoki.me (蒼時弦也)</managingEditor><webMaster>contact@aotoki.me (蒼時弦也)</webMaster><lastBuildDate>Fri, 18 Aug 2023 00:00:00 +0800</lastBuildDate><atom:link href="https://blog.aotoki.me/index.xml" rel="self" type="application/rss+xml"/><item><title>資料跟資訊的差異 - Rails 開發實踐</title><link>https://blog.aotoki.me/posts/2023/08/18/rails-in-practice-data-and-information/</link><category>經驗</category><category>心得</category><category>Rails</category><category>Rails 開發實踐</category><pubDate>Fri, 18 Aug 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/08/18/rails-in-practice-data-and-information/</guid><description>&lt;p>你有想過&lt;a href="https://www.moedict.tw/%E8%B3%87%E6%96%99">資料（Data）&lt;/a>和&lt;a href="https://www.moedict.tw/%E8%B3%87%E8%A8%8A">資訊（Information）&lt;/a>的差異嗎？在軟體開發的過程中，我們做的通常被叫做「資訊系統」然而大多數情況，我們很可能只是單純的把資料放到一個程序裡面，然後對這些資料做了一些調整，中間並沒有「資訊」的概念在裡面。&lt;/p></description><content:encoded>&lt;p>你有想過&lt;a href="https://www.moedict.tw/%E8%B3%87%E6%96%99">資料（Data）&lt;/a>和&lt;a href="https://www.moedict.tw/%E8%B3%87%E8%A8%8A">資訊（Information）&lt;/a>的差異嗎？在軟體開發的過程中，我們做的通常被叫做「資訊系統」然而大多數情況，我們很可能只是單純的把資料放到一個程序裡面，然後對這些資料做了一些調整，中間並沒有「資訊」的概念在裡面。&lt;/p>
+&lt;h2 id="context">脈絡&lt;/h2>
+&lt;p>在英文字典中，資訊的定義是「有脈絡（Context）的資料」而在中文字典，資訊是指「經過處理的資料」也就是說，我們平常在使用的「資料庫」是保存未經處理的部分，那麼脈絡是什麼呢？&lt;/p>
+&lt;p>舉例來說，假設我們在一個超商買東西的場景，當我拿出鈔票付錢的時候，我們就自然的理解了一些脈絡，在這個時候我們直接用「50」也能馬上被理解為「50 元」這就是所謂的脈絡，在這個過程中「50」是我們的資料，而 「50 元」就是所謂的資訊。&lt;/p>
+&lt;p>在轉換需求為規格的過程中，我們遭遇到最大的問題其實是日常溝通中需要透過多次的「對話」來補全脈絡，規格和 Key Examples（關件案例）這類資訊，就是從需求中提取出可以代表這個脈絡的關鍵資訊來使用。&lt;/p>
+&lt;h2 id="mode-and-entity">模型與實體&lt;/h2>
+&lt;p>在 Rails 中我們會很自然的把資料跟 Model（模型）聯想在一起，這是因為 ORM（Object Relational Mapping，物件關係映射）機制的特性，大多數的 MVC 框架都會提供這樣的機制，因而讓我們忘記了在程式中使用的 Model 應該是一個脈絡下的 Entity（實體）&lt;/p>
+&lt;p>大多數人接觸到 Entity 的概念應該是因為 Domain-Driven Design（領域驅動開發）的關係，在這個章節我們不會深入討論過多，先以一個 Model 作為例子。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">Subscription&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicationRecord&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="n">has_many&lt;/span> &lt;span class="ss">:items&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">class_name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s1">&amp;#39;SubscriptionItem&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="n">attribute&lt;/span> &lt;span class="ss">:expired_at&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">:datetime&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">calculate_expired_at&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl"> &lt;span class="nb">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">expired_at&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">created_at&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">items&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">sum&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="ss">:extend_amount&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">8&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">9&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在上面這個例子中，過期時間是透過 ActiveModel 的 DSL 所定義的，而不是透過 ActiveRecord 自訂映射而來，然而我們仍然可以正常使用這個屬性。&lt;/p>
+&lt;p>這會影響使用嗎？其實這是一種設計的選擇，我們可以在資料庫建立一個 &lt;code>expired_at&lt;/code> 的欄位來儲存這個資訊，也可以改為儲存每一筆紀錄，最後用聚合（Aggregate）的函示 &lt;code>SUM&lt;/code> 將所有延展的時間加總，最後跟開始訂閱的時間相加去計算出最後過期的時間點。&lt;/p>
+&lt;p>也就是說，我們的模型不總是跟資料庫完全對應的，他會取決於我們怎麼使用。&lt;/p>
+&lt;h2 id="from-state">從狀態出發&lt;/h2>
+&lt;p>Entity 在一個系統中扮演的角色是「維護狀態」以前面訂閱的例子來看，每一筆訂閱紀錄都會知道自己在什麼時候開始，但不會特別去儲存「過期時間」當我們需要知道何時過期時，可以透過每一次續訂的紀錄來計算，這是因為受到「規格」的影響。&lt;/p>
+&lt;p>假設每一次的續訂都是延展 30 天，如果用日期來紀錄，其實會變得有點麻煩，因為我們會需要每次都計算延展 30 天是到哪一天。&lt;/p>
+&lt;p>然而改為延展天數，那麼就可以直接儲存 &lt;code>30&lt;/code>，未來改變延展的時間，只需要調整 &lt;code>30&lt;/code> 這個常數即可。&lt;/p>
+&lt;p>反過來看，如果訂閱機制是以「月底」為基礎來判定，在這個狀況下，用 &lt;code>30&lt;/code> 或 &lt;code>31&lt;/code> 來儲存就會變得複雜，正因如此，假設我們還無法確定怎樣儲存資料能更符合需求，不如先避免儲存到資料庫的設計，用不同的方式規劃 Model 來驗證，等到我們找到適合的狀態管理方式後，再進行資料表的設計與建立。&lt;/p></content:encoded><media:content url="https://blog.aotoki.me/cover/2023-rails-in-practice.jpg" type="image/jpeg" medium="image"/></item><item><title>超限學習</title><link>https://blog.aotoki.me/posts/2023/08/13/the-overlimit-learning/</link><category>心得</category><category>經驗</category><category>學習</category><category>WebConf</category><pubDate>Sun, 13 Aug 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/08/13/the-overlimit-learning/</guid><description>&lt;p>十年前 WebConf 在台下聽演講，十年後自己也成為講者的一員。經過思考，我決定用之前在商業思維學院中的&lt;a href="https://learn.bizthinking.com.tw/packages/7da27E/intro">讓知識有光&lt;/a>課程中，我沒有選擇的「（工程師）自我學習」這個題目作為這次 WebConf 的心得。&lt;/p></description><content:encoded>&lt;p>十年前 WebConf 在台下聽演講，十年後自己也成為講者的一員。經過思考，我決定用之前在商業思維學院中的&lt;a href="https://learn.bizthinking.com.tw/packages/7da27E/intro">讓知識有光&lt;/a>課程中，我沒有選擇的「（工程師）自我學習」這個題目作為這次 WebConf 的心得。&lt;/p>
+&lt;h2 id="reason">緣由&lt;/h2>
+&lt;p>最初是想寫成三篇不同的文章，一篇寫 WebConf 的心得、一篇記錄一下這次分享的內容，另一篇則是最近對學習上的感想。然而再去晚宴的路上時，&lt;a href="https://kaochenlong.com/">龍哥&lt;/a>跟我分享最後一場演講&lt;a href="https://hackmd.io/@webconf/BkImQ0Ds3/%2Fpk7crlHPTQumx2NzjWTdBQ">Beyond Technology 技術之外 - 從個人身心安頓到人類福祉追求&lt;/a>對許多自己熟知的業界前輩也有幫助的資訊。&lt;/p>
+&lt;p>因為我的演講在這場演講之前，沒有聽到完整的內容。然而演講中提到的「焦慮」是許多人正在面臨的問題，也點出了我們之所以會去參與 WebConf 是否也是一種「資訊焦慮」這樣的問題。&lt;/p>
+&lt;blockquote>
+&lt;p>第一天在講者休息室&lt;a href="https://blog.orange.tw/">橘子&lt;/a>提到大家不怎麼在外面聊天，我們都是差不多時期開始參與社活動，回顧當時的氛圍不是資訊焦慮，而是拿著有趣的技術去交流的心態，這幾年明顯能感受到研討會活動氣氛和以往不同。&lt;/p>
+&lt;/blockquote>
+&lt;p>我這幾年也剛好度過一個「門檻」跟一些不同類型的焦慮進行深度的「交流」看到前輩們也有不同的煩惱，同時這幾年才成為工程師的人們也有另一種煩惱，就覺得很適合把 WebConf 跟學習這兩篇文章一起整合來講。&lt;/p>
+&lt;p>預期會是稍微長的文章，而且很難涵蓋所有的範圍，因此會比較集中在「學習」這一個主軸。&lt;/p>
+&lt;h2 id="heart">心&lt;/h2>
+&lt;p>我認為必須從「心理」或者「心態」開始討論，有好的心態不一定有好的心理狀態，因此我們會焦慮、會挫折。&lt;/p>
+&lt;p>我相信，工程師是很容易忘記關注「人」的的職業，工作久了之後會發現對外（客戶、夥伴）不當成人，對內（自己）也不當成人，最後就覺得自己在工作中「裡外不是人」更慘的是，因為同事都是工程師，互相不把對方當人看。&lt;/p>
+&lt;p>聽起來很嚴重，大多數人應該沒有這樣的問題吧？心理上的問題很難處理的地方就在於此，我們很難意識到這樣的狀態。&lt;/p>
+&lt;p>2013 年接觸到社群活動，我對於技術的熱情是十足的，也相信自己能不斷的精進技術。出社會後，也不斷的用技術對公司做出貢獻，保持這樣的心理狀態是很輕鬆的，因為只需要不斷的「進步」一切似乎就會順利。&lt;/p>
+&lt;p>這不就是一個「無情的寫 Code 機器」嗎？當一切的基準都是「寫好程式」的時候，我們是否對於同事的失誤、客戶的需求都以一種效率、正確這類方式去判斷了？也許客戶提出意見是我們沒有解決問題、同事失誤是狀態不好、沒有經驗。&lt;/p>
+&lt;p>昨晚到家後發現沒能跟&lt;a href="https://hackmd.io/@webconf/BkImQ0Ds3/%2FhUfiJkrySvqn9ptbjSOSgA">資訊架構設計新體驗：在需求情境中運用領域事件分析描述結構化內容&lt;/a>的講者 Soking 聊到，他分享的方法和我在理解 Domain-Driven Design 的方向類似，卻從我沒思考過的角度切入。&lt;/p>
+&lt;p>透過 Facebook 簡單的交流，也注意到了一些有趣的狀況。同樣是使用者的需求，我從工程師的角度看的是「規格」是否能被確定下來，然而 Soking 則是從「使用者為什麼想這樣做」「他是否想解決某個問題」這樣的角度切入。&lt;/p>
+&lt;p>是否注意到了？我們試著把自己「數值化」好像聽了一場演講經驗值就會增加 10 點，工作一段時間之後就會升級，甚至履歷上還被要求精確寫著「改善公司服務 50% 反應時間，降低到 100ms」之這樣的描述，在業界我們很少問你的「想法」是如何的。&lt;/p>
+&lt;blockquote>
+&lt;p>這幾年在調整的過程中，我問了工作中第一次帶的同事。他說他不太喜歡在有其他人的時候找我提問，因為我的反應總是讓他覺得他很笨。實際上我一直都很看好他，他願意來問我也是因為能學到東西，我卻因為總是用「這不是常識嗎？」這樣的標準看待工作，反而讓同事們不敢找我討論。&lt;/p>
+&lt;/blockquote>
+&lt;p>從 Ant 分享的&lt;a href="https://hackmd.io/@webconf/BkImQ0Ds3/%2F00roPb7NQKOEHNoFGT6hig">從專業到商業：十年軟體架構變遷&lt;/a>中，也有提到會問面試者對自己「十年後」的想像（大家能想像出來自己想要什麼嗎？）即使 DevOps 的發展雖然有著「專業」的考量，然而還是能看出依循人性去不斷的調整。&lt;/p>
+&lt;p>那麼「人」到底是什麼？&lt;/p>
+&lt;p>我自己也不能很好的回答，我認為至少要先看「自己」然後再看看「其他人」是怎麼樣的，就像我在&lt;a href="https://hackmd.io/@webconf/BkImQ0Ds3/%2FTNzR66T8QX6WxEdWuXQb4w">選擇適合你的技能組合&lt;/a>想傳達的觀念一樣，先搞清楚自己想要什麼，再去做選擇，人生遠比想像中還長，不用擔心學不會那些覺得自己需要學會的技能。&lt;/p>
+&lt;p>對內心的探索還有很多面向，作為這一個段落的收尾，我認為用「當你意識到自己是獨一無二時，才能夠變得不凡」來作為收尾，在這之前我們需要先學會「跟自己相處」&lt;/p>
+&lt;blockquote>
+&lt;p>其實還有不少小故事，幾年前自己精神狀況很嚴重時，幾乎是用一種「把自己打碎重組」的方式去處理，我是希望大家不太會走到這樣的階段，也很推薦定期找諮商師，要遇到 Mentor（人生導師）並不容易，諮商師作為「教練」能幫助你在「自己」這件事情找到出各種盲點，那麼就有機會處理。&lt;/p>
+&lt;/blockquote>
+&lt;h2 id="skill">技&lt;/h2>
+&lt;p>知道自己想要什麼後，才能來討論「技能」和「知識」這些讓我們的「下限」增加的問題，因為「上限」在自己做出選擇時就能知道大概在哪裡，至少是自己做出選擇，大概就和&lt;a href="https://hackmd.io/@webconf/BkImQ0Ds3/%2Fo2qdy0YySReFsx6Uf5pdDQ">講事實沒用，顧客才不聽這個！&lt;/a>提到的「信仰」一樣，才能說服自己堅持下去。&lt;/p>
+&lt;blockquote>
+&lt;p>「信仰」的這部分以後有機會可以討論，在工作中那就是公司有沒有「願景」我曾經為了瞭解大公司的運作模式，加入到有 3,000 人的外商加密貨幣公司，因為我沒有信仰，所以又當了一陣子「無情的寫 Code 機器」同時公司似乎也沒有讓我感受正在做的事情跟公司的願景是一致的。&lt;/p>
+&lt;/blockquote>
+&lt;p>要學習技能、知識最困難的不是天份也不是有多努力，而是你是否能夠看見也就是你的「視野」是否足夠廣闊。&lt;/p>
+&lt;p>要有足夠的「視野」並沒有想像中容易，我從一開始就是以 IC（Individual Contributor，獨立貢獻者）當作職涯目標，因為我喜歡寫程式，不是某個語言、也不是這個語言，而是寫程式本身。在工作的前幾年，我認為只需要不斷的磨練技術就可以達到這個目標。&lt;/p>
+&lt;p>然而，這幾年發現這個角色當「技術」達到一個極限後，要面對的仍就是「人」的問題，當你不斷地注視在技術上，你就看不到這些狀況。&lt;/p>
+&lt;blockquote>
+&lt;p>今年也有不少議程在討論這個問題，像是&lt;a href="https://hackmd.io/@webconf/BkImQ0Ds3/%2FdTk44rdmRaGJOFVN5oB4pg">為何技術老人這樣想那樣做？從技術前輩的視角理解技術決策&lt;/a>就是一個工作越久越有感的問題，除此之外&lt;a href="https://www.tenlong.com.tw/products/9789865027896">經理人之道&lt;/a>也是很不錯的書，或者只聽過傳聞 vgod 的&lt;a href="https://vgod.medium.com/%E8%BB%9F%E9%AB%94%E5%B7%A5%E7%A8%8B%E5%B8%AB%E7%9A%84%E4%BF%AE%E7%85%89%E8%88%87%E6%88%90%E9%95%B7-1-7b906f837d74">軟體工程師的修煉與成長&lt;/a>系列都是很不錯的學習方向。&lt;/p>
+&lt;/blockquote>
+&lt;p>最近，因為公司有想做的新產品需要驗證，因此公司的 C-Level 等希望主管提供一個原型（Prototype）來展示跟討論，剛好就交給我來執行。在向 C-Level 們介紹時，主管用了「這是蒼時協助實現的」這樣的方式來描述，讓我注意到「專業的主管」在做事上也有很多細節。&lt;/p>
+&lt;p>如果說「心」是對內的思考，那麼「技」其實就是對外的思考，我們要去觀察業界需要怎樣的人、公司期待怎樣的員工等等因素，再去思考應該具備怎樣的能力」&lt;/p>
+&lt;p>當內外對應起來的時候，可能不會停止焦慮，但是少你會不再迷惘。&lt;/p>
+&lt;p>回到視野，假設在幾年前，我是不會看到主管這樣的一句話會有怎樣的效果，然而當我讀完上述的一些書籍、文章，以及跟我的直屬主管 1 on 1 討論的不少議題後，發現這是一種非常專業的表現，一方面是幫助有能力的員工獲得關注，同時也幫自己建立一個在未來能支持自己的人脈。&lt;/p>
+&lt;p>假設目標是管理職，那麼這是很重要的。我認為這是很重要的 People Management 技巧，國外會把這類型的職位獨立出來似乎也是合理的，因為需要注意到這樣細緻的細節並不容易，作為管理者是要隨時注意團隊的狀況提供最佳的支援，那麼才能讓團隊獨立的運作起來，主管才有機會投入到更重要的事情上。&lt;/p>
+&lt;blockquote>
+&lt;p>技術跟管理職的部分可以參考&lt;a href="https://hackmd.io/@webconf/BkImQ0Ds3/%2FmRsVX_zeSia-A19Zda2C3w">跳脫技術職與管理職的二分選擇，技術管理職讓職涯無限寬廣&lt;/a>這場的內容（我沒有聽到只有讀了筆記）另一方面在 1 on 1 上，我認為能不能維持「信任」是很重要的，另一場擠不進去的&lt;a href="https://hackmd.io/@webconf/BkImQ0Ds3/%2FW8od3KH2QLWJeSWmT_kuwg">【工作坊】敏捷不只是敏捷：從台灣看敏捷實踐的十年變遷以及必備微技能&lt;/a>也提到敏捷開發是需要「心理安全感」當我們不信任團隊、主管，那麼也很難很好的實踐敏捷。&lt;/p>
+&lt;/blockquote>
+&lt;p>視野，其實就是知識、見聞的累積，研討會、社群活動的作用是什麼呢？除了獲取「新知」之外，你還需要去認識看看不同的人，了解他們的觀點、看法，那麼你才能從自己從未考慮過的面相、角度去思考，就可以不斷地拓展視野，所以也不能把時間都放在議程之中。&lt;/p>
+&lt;p>過去幾年我也在這方面有所停滯，因為舒適圈非常舒服。當我選擇換公司、換語言之後，又有許多不同角度的人、事、物可以作為參考，就能看到更多東西。&lt;/p>
+&lt;p>用我在 RubyJam 社群活動分享的「專業，源自於對細節的掌握」作為這一段的結尾。&lt;/p>
+&lt;h2 id="experience">體&lt;/h2>
+&lt;p>最後，我們還需要去「體驗」在研討會結束後，是否有興奮地嘗試那些講者分享的內容呢？即使選定了方向、學會了知識，沒有實際做過一次，是不會有經驗的。&lt;/p>
+&lt;p>之所以會用「超限學習」作為文章的主題，是因為大學讀的是多媒體設計，設計學院的畢業專題大多以「爆肝」聞名，我自己也體驗過一週一天只睡三小時左右的生活。&lt;/p>
+&lt;p>當時很常跟同學說的是「極限是用來超越的，超越極限後才會有新的極限」&lt;/p>
+&lt;p>似乎是很不妙的發言，然而在十年後來看，卻非常有道理。這幾年我都是採用&lt;a href="https://www.kobo.com/tw/zh/ebook/pGo8y2e4ET6pdObwFQDfkg">原子習慣&lt;/a>的方式安排生活，這是因為我發現我有許多目標，像是畢業後再次做遊戲、對 Ruby 語言社群有所貢獻、拓展自己的職涯等等。&lt;/p>
+&lt;p>一晃十年，似乎什麼都沒有一個成果。這是因為我們對於「細節」無法想像，無法清楚的知道要完成這樣的成果需要怎樣的實踐，就像現在要寫一個短篇小說，我們大多無法馬上把劇情細節安排詳細一樣。&lt;/p>
+&lt;p>我們知道要去「實踐」但是卻一直無法開始，就是期待成果太過完美、目標太過遙遠而無法想像，那麼最好的方法就是變成「可以負擔的狀態」&lt;/p>
+&lt;p>即使換到使用 Golang 我也還想繼續使用 Ruby，那麼給自己設定了在 Golang 實現 Ruby 環境的目標，我每週都會加上數十行的程式到 &lt;a href="https://github.com/elct9620/mruby-go">mruby-go&lt;/a> 這個專案中，不管最後成果如何，至少下一個十年我不會毫無成果。&lt;/p>
+&lt;p>同樣的，我想拓展我的職涯和實踐理念，也跟&lt;a href="https://5xruby.tw/">五倍學院&lt;/a>合作開了幾門課程，為了這門課程我需要每週更新一篇文章作為內容改進的參考以及宣傳，我給自己的要求就是一週寫兩篇，並持續準備下一期的文章，至今已經持續更新一年半，也規劃到明年下半年能順利更新。&lt;/p>
+&lt;p>然後，就到此為止了嗎？&lt;/p>
+&lt;p>並沒有，當我習慣做這些事情之後，我需要去破壞這些習慣，增加強度然後再一次去習慣。這就是「超越極限」當我們越來越熟練做某件事情後，就變成「舒適」的狀態，就會很難再次進步。&lt;/p>
+&lt;p>因此，只是習慣還不夠。還需要超越這些習慣，達到更加熟練的程度，這才是透過累積不斷進步的本質所在。&lt;/p>
+&lt;blockquote>
+&lt;p>我在 WebConf 有提到，我的不用工作是「快到看起來像是沒有在工作」就是在這樣的前提下達成的，所以才能的跟大家開玩笑說「團隊借用的同事都回到原團隊後，我自己一人還是能保持專案進度」工作七、八年的過程中，我在實作的速度跟正確率都還在不斷地提高。&lt;/p>
+&lt;/blockquote>
+&lt;p>這是&lt;a href="https://hackmd.io/@webconf/BkImQ0Ds3/%2FTz4XDh74SqGDDZiGcWBaKg">AI 驅動下的開發者體驗&lt;/a>所提到的「Good Enough」情境，我們會開始「焦慮」的事情，其實就是被不斷的推到懸崖邊，然後要努力地爬回原地。&lt;/p>
+&lt;p>我並不擔心 AI 的衝擊，很大的原因是我在試用了 Copilot 後確定我的反應速度更快、更準確，同時我也準備好更複雜的知識（架構、系統設計）這些難以用片段程式碼就解釋清楚的問題，我過去累積的一切經驗都讓我有這樣的「餘裕」&lt;/p>
+&lt;blockquote>
+&lt;p>AI 領域中有不少我「認知範圍（視野）以外」的知識，也有很多可以從我過去經驗中「拼湊」起來的東西，透過實踐（如：&lt;a href="https://blog.aotoki.me/posts/2023/03/01/learn-generative-ai-stable-diffusion-in-programmer-way/">用工程師的方式入門生成式 AI - Stable Diffusion&lt;/a>）的方式驗證知識，最後就能逐漸了解背後的機制，那就不需要擔心或者害怕。&lt;/p>
+&lt;/blockquote>
+&lt;p>WebConf 結束後有人私訊我的粉專告訴我從演講中「可以感受到我這十幾年來的血淚史」這是為什麼有些人總能不緊張、冷靜地應對，因為他有「餘裕」一種「前面所有的地雷位置我都知道」的餘裕，所以可以冷靜的對應變化。&lt;/p>
+&lt;p>十年前，我在 &lt;a href="https://sitcon.org">SITCON&lt;/a> 也跟夥伴們討論過「理論」和「實踐」的重要性，到最後，我們發現是缺一不可，即使做出行動去「學習」沒有透過實踐轉換成經驗，是不夠的。&lt;/p>
+&lt;h2 id="complex">複雜&lt;/h2>
+&lt;p>現實中我們面臨的問題總是更加複雜，不論是某個專業或學習技巧，如果只從特定的面向去看，大多會面臨失敗。&lt;/p>
+&lt;p>從「內心」開始，我們要需要先搭建出能構承受這樣強度的心理狀態，那麼心態正不正確才有意義，不然就變成不斷的學習卻無法承受挫折，最後還是會放棄、迷惘。&lt;/p>
+&lt;p>即使內心準備好，不斷的學習，如果視野不夠還是很難繼續深入，就算心態再開放能夠接受各種不同的知識也不會有幫助。&lt;/p>
+&lt;p>同樣的，即使學會再多知識、看得再廣最後沒有實踐轉換成經驗，那也只會停留在「理論上」也無法向任何人證明知識是有用的。&lt;/p>
+&lt;p>然而，就算有實際的經驗可以解決現實層面的問題，最後也會因為整個文明的演進從「獨有的經驗」變成「共有的經驗」這些經驗的價值也會不斷降低，還需要持續的突破極限，保持在最前緣的狀態。&lt;/p>
+&lt;p>想要保持這樣極限的狀態，最後還是回到自身內心的狀態，當「心累」的感覺出現，就很難持續下去，那麼怎麼維持這樣的整體狀態持續足夠長的時間，就需要「適當」的調整，給自己適當的壓力、適當的知識、適當的實踐、適當的休息，等變強壯一點，就可以再增加強度。&lt;/p>
+&lt;blockquote>
+&lt;p>最危險的，其實不是自己給自己壓力。而是身邊的人給的，我認為「面對自己」這件事情很大一部分，就是跟&lt;a href="https://www.kobo.com/tw/zh/ebook/nvedXSs0ujimMMwueunJew">被討厭的勇氣&lt;/a>講的課題分離一樣，很多時候我們不需要把對方的責任當成自己的責任，也要注意不要把自己的壓力變成別人的壓力。&lt;/p>
+&lt;/blockquote></content:encoded></item><item><title>用測試完善規格 - Rails 開發實踐</title><link>https://blog.aotoki.me/posts/2023/08/11/rails-in-practice-use-test-to-complete-specification/</link><category>測試</category><category>經驗</category><category>心得</category><category>Rails</category><category>Rails 開發實踐</category><pubDate>Fri, 11 Aug 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/08/11/rails-in-practice-use-test-to-complete-specification/</guid><description>&lt;p>過去我在寫測試的時候經常會有「這裡該測試嗎？」的疑問，然而這個問題其實可以從另一個角度思考，那就是「這些測試組以完善規則嗎？」去想，以我們第一個 E2E Testing 的測試作為例子，雖然可以通過測試，然而實作的內容只是一些假資料，我們需要用另一條測試從其他角度去驗證，讓實作最終變成我們預期的樣子。&lt;/p></description><content:encoded>&lt;p>過去我在寫測試的時候經常會有「這裡該測試嗎？」的疑問，然而這個問題其實可以從另一個角度思考，那就是「這些測試組以完善規則嗎？」去想，以我們第一個 E2E Testing 的測試作為例子，雖然可以通過測試，然而實作的內容只是一些假資料，我們需要用另一條測試從其他角度去驗證，讓實作最終變成我們預期的樣子。&lt;/p>
+&lt;h2 id="check-data">檢查資料&lt;/h2>
+&lt;p>我們之所以會檢查訂閱狀態顯示「30 天後到期」是因為剛訂閱完畢後應該會有這樣的狀況，然而這只需要簡單的寫死即可，為了達成這件事情，我們可以利用檢查資料是否存在的方式做處理。&lt;/p>
+&lt;p>舉例來說，在 &lt;code>/plans&lt;/code> 的頁面原本是「訂閱」按鈕，現在會因為我們已經訂閱，而把這個按鈕隱藏，或者顯示「已經訂閱」的訊息作為替代，也因此我們可以加入一個新的測試案例。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-gherkin" data-lang="gherkin">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="c"># features/subscription.feature&lt;/span>&lt;span class="nf">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl">&lt;span class="nf">&lt;/span>&lt;span class="c">#language:zh-TW&lt;/span>&lt;span class="nf">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl">&lt;span class="nf">&lt;/span>&lt;span class="c"># ...&lt;/span>&lt;span class="nf">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">場景:&lt;/span>&lt;span class="nf"> 當 Aotoki 在訂閱後，再次選擇方案時會看到「已經訂閱」
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl">&lt;span class="nf">&lt;/span>&lt;span class="k"> 當&lt;/span>&lt;span class="nf"> 我打開訂閱頁面
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">並且&lt;/span>&lt;span class="nf"> 點選 &amp;#34;&lt;/span>&lt;span class="s">訂閱&lt;/span>&lt;span class="nf">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">並且&lt;/span>&lt;span class="nf"> 我打開訂閱頁面
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">8&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">那麼&lt;/span>&lt;span class="nf"> 我會看到 &amp;#34;&lt;/span>&lt;span class="s">已經訂閱&lt;/span>&lt;span class="nf">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>步驟其實跟訂閱並沒有太大差異，只是我們換到其他頁面去做確認，透過這樣的方式，也可以幫助我們多次驗證一個功能是否有沒有考慮到的地方，也因此我們才會將這些規格以 Key Examples（關鍵案例）的方式進行描述。&lt;/p>
+&lt;h2 id="manage-state">狀態管理&lt;/h2>
+&lt;p>到了這一步，是不是終於要建立資料表了呢？很抱歉，資料表的建立還需要再多一些步驟，在這之前我們需要思考的是「狀態」管理的問題。&lt;/p>
+&lt;p>一個功能要運作，並不一定要依賴資料庫，或者說資料庫是「持久化儲存」的機制，這也代表如果只是要紀錄「訂閱狀態」的話是不需要依靠資料庫，我們只需要讓 Rails 知道某個使用者具備「已訂閱」的狀態即可，因此可以實作一個 Model 來實現這件事情。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">Subscription&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl"> &lt;span class="k">class&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="nb">self&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl"> &lt;span class="c1"># 用一個 Set 資料結構紀錄不重複的使用者 ID&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">subscribed&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl"> &lt;span class="vi">@subscribed&lt;/span> &lt;span class="o">||=&lt;/span> &lt;span class="no">Set&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">new&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl"> &lt;span class="c1"># 當建立一筆資料會插入 ID 到這個 Set 中&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">create&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="ss">user_id&lt;/span>&lt;span class="p">:)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl"> &lt;span class="n">subscribed&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="n">user_id&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl"> &lt;span class="c1"># 以使用者 ID 為基準查詢，如果找到就回傳一個 Subscription 物件&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">by_user&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="ss">user_id&lt;/span>&lt;span class="p">:)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">15&lt;/span>&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="o">[]&lt;/span> &lt;span class="k">unless&lt;/span> &lt;span class="n">subscribed&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">include?&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">user_id&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">16&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">17&lt;/span>&lt;span class="cl"> &lt;span class="o">[&lt;/span>&lt;span class="no">Subscription&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">new&lt;/span>&lt;span class="o">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">18&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">19&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">20&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>像這樣子，我們就可以在記憶體中保存 Subscription 的狀態，而且不需要連接資料庫，雖然並不能持久化的保存資料，但是足夠讓我們通過這一個新的測試案例。&lt;/p>
+&lt;blockquote>
+&lt;p>可能會有人好奇為什麼 &lt;code>#by_user&lt;/code> 回傳的是陣列，這是為了讓他再轉換為 ActiveRecord 連接資料庫時，跟 &lt;code>scop :by_user, -&amp;gt;(user_id:) { where(user_id:) }&lt;/code> 有相同的介面（Interface）的原因。&lt;/p>
+&lt;/blockquote>
+&lt;h2 id="modify-implementation">修改實作&lt;/h2>
+&lt;p>接下來，我們需要將 Controller 和 View 稍作調整，這樣就可以再次通過新加入的測試。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">SubscriptionsController&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicationController&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="c1"># ...&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">create&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl"> &lt;span class="no">Subscription&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">create&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="ss">user_id&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="n">current_user&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">id&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl"> &lt;span class="n">redirect_to&lt;/span> &lt;span class="n">subscriptions_path&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">8&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在 &lt;code>SubscriptionController&lt;/code> 加入 &lt;code>Subscription.create(...)&lt;/code> 的呼叫，來實現跟 ActiveRecord 建立資料一樣的介面，之後替換成真正的資料庫時就可以省去修改的時間。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">PlansController&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicationController&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">index&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="vi">@subscription&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="no">Subscription&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">by_user&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="ss">user_id&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="n">current_user&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">id&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">first&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>至於 &lt;code>PlansController&lt;/code> 就需要定義 &lt;code>#index&lt;/code> 方法來找到訂閱，這裡我們可以選擇用 &lt;code>current_user.subscriptions&lt;/code> 或者 &lt;code>Subscription.by_user(...)&lt;/code> 兩個不同的方式，在設計的意涵上是有點不同的，我們之後會再深入討論這個問題。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-html" data-lang="html">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="err">&amp;lt;&lt;/span>% if @subscription.present? %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">div&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>已經訂閱&lt;span class="p">&amp;lt;/&lt;/span>&lt;span class="nt">div&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl">&lt;span class="err">&amp;lt;&lt;/span>% else %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="err">&amp;lt;&lt;/span>%= form_with url: subscriptions_path, method: :post do |f| %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl"> &lt;span class="err">&amp;lt;&lt;/span>%= f.submit &amp;#39;訂閱&amp;#39; %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl"> &lt;span class="err">&amp;lt;&lt;/span>% end %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl">&lt;span class="err">&amp;lt;&lt;/span>% end %&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>最後我們可以在 View 上面加入 &lt;code>@subscription.present?&lt;/code> 的檢查，那麼就可以順利地呈現「已經訂閱」的訊息，到這個階段我們還是不需要考慮「資料庫」的問題。&lt;/p>
+&lt;p>那麼，什麼時候該用到資料庫呢？在這之前我們需要先針對「脈絡」「資訊」「資料」做一次討論，就會知道該如何正確的應用資料庫。&lt;/p></content:encoded><media:content url="https://blog.aotoki.me/cover/2023-rails-in-practice.jpg" type="image/jpeg" medium="image"/></item><item><title>快速通過測試的方法 - Rails 開發實踐</title><link>https://blog.aotoki.me/posts/2023/08/04/rails-in-practice-the-fast-way-to-pass-test/</link><category>測試</category><category>經驗</category><category>心得</category><category>Rails</category><category>Rails 開發實踐</category><pubDate>Fri, 04 Aug 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/08/04/rails-in-practice-the-fast-way-to-pass-test/</guid><description>&lt;p>通過規格的分析我們準備好了 E2E Testing 的文件，以及對應的步驟實現，然而在這個狀態下是無法順利通過測試的，因此我們需要進行一些實作。在只有一條測試的狀況下，我們可以用非常簡單的方法通過這個測試。&lt;/p></description><content:encoded>&lt;p>通過規格的分析我們準備好了 E2E Testing 的文件，以及對應的步驟實現，然而在這個狀態下是無法順利通過測試的，因此我們需要進行一些實作。在只有一條測試的狀況下，我們可以用非常簡單的方法通過這個測試。&lt;/p>
+&lt;h2 id="add-route">加入路由&lt;/h2>
+&lt;p>實踐 E2E Testing 的方式最直覺的做法就是「由外而內」對使用者來說開啟某個頁面是透過點選特定選單進行的，因此我們需要先加入一個路由來實現「我打開訂閱頁面」這個動作。&lt;/p>
+&lt;blockquote>
+&lt;p>在前面的例子中，我們的步驟都是直接呼叫 &lt;code>visit&lt;/code> 方法來進行，更好的做法是從首頁作為起點，以連續的動作進行，這樣才可以測出無法到達的頁面。&lt;/p>
+&lt;/blockquote>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="no">Rails&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">application&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">routes&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">draw&lt;/span> &lt;span class="k">do&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="c1"># ...&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="n">root&lt;/span> &lt;span class="ss">to&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s1">&amp;#39;plans#index&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="n">resources&lt;/span> &lt;span class="ss">:plans&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">only&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="o">%&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="n">index&lt;/span>&lt;span class="o">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl"> &lt;span class="n">resources&lt;/span> &lt;span class="ss">:subscriptions&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">only&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="o">%&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="n">index&lt;/span> &lt;span class="n">create&lt;/span>&lt;span class="o">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>我們先將 &lt;code>/plans&lt;/code> 和 &lt;code>/subscriptions&lt;/code> 加入，實際上實作的時候也可以分開加入，控制最小的步驟也是確保每個 Commit（提交）不會一口氣修改過多的檔案，造成之後 Revert（退回）過於困難。&lt;/p>
+&lt;h2 id="add-controller">加入 Controller&lt;/h2>
+&lt;p>接下來要加入 Controller 讓我們可以順利開啟這兩個頁面，其中 &lt;code>SubscriptionsController&lt;/code> 的內容可能會讓你們覺得有點意外。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">SubscriptionsController&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicationController&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">index&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="n">render&lt;/span> &lt;span class="ss">plain&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s1">&amp;#39;30 天後到期&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">create&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl"> &lt;span class="n">redirect_to&lt;/span> &lt;span class="n">subscriptions_path&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">8&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">9&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>如果我們這樣寫，測試會通過的嗎？現在可以保持疑問，我們繼續完成後再來揭曉答案。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">PlansController&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicationController&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>至於 &lt;code>PlansController&lt;/code> 因為只是單純的表單，我們可以直接加入 View 來實現這件事情。&lt;/p>
+&lt;h2 id="add-view">加入 View&lt;/h2>
+&lt;p>在這個階段，我們加入 View 也只是方便製作表單，如果只需要顯示純文字的訊息，使用 &lt;code>render plain: '...'&lt;/code> 的方式也是完全沒有問題的，因為我們關注的是「功能（Feature）」而不是介面（User Interface）&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-html" data-lang="html">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="c">&amp;lt;!-- app/views/plans/index.html.erb --&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl">&lt;span class="err">&amp;lt;&lt;/span>%= form_with url: subscriptions_path, method: :post do |f| %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="err">&amp;lt;&lt;/span>%= f.submit &amp;#39;訂閱&amp;#39; %&amp;gt;
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl">&lt;span class="err">&amp;lt;&lt;/span>% end %&amp;gt;
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>像這樣子，我們基本上就完成通過測試的必要條件，現在可以使用 &lt;code>bundle exec cucumber&lt;/code> 命令，看看是否可以通過測試。&lt;/p>
+&lt;p>最後，測試順利通過，這也表示我們的 Key Examples（關鍵案例）雖然有意義，然而卻不足以完整的描述這個功能，也因此我們還需要加入更多的例子，直到這個功能具備我們所預期的一切機制。&lt;/p></content:encoded><media:content url="https://blog.aotoki.me/cover/2023-rails-in-practice.jpg" type="image/jpeg" medium="image"/></item><item><title>可以測試的規格 - Rails 開發實踐</title><link>https://blog.aotoki.me/posts/2023/07/28/rails-in-practice-testable-specification/</link><category>規格</category><category>測試</category><category>經驗</category><category>心得</category><category>Rails</category><category>Rails 開發實踐</category><pubDate>Fri, 28 Jul 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/07/28/rails-in-practice-testable-specification/</guid><description>&lt;p>當我們有了關鍵案例（Key Examples）後，規格已經相對的明確，如果還能夠被自動化測試的話，是不是一件更好的事情呢？我們可以利用 Cucumber 來實踐 E2E Testing（端對端測試）讓我們模擬使用者實際操作來驗證規格的完善。&lt;/p></description><content:encoded>&lt;p>當我們有了關鍵案例（Key Examples）後，規格已經相對的明確，如果還能夠被自動化測試的話，是不是一件更好的事情呢？我們可以利用 Cucumber 來實踐 E2E Testing（端對端測試）讓我們模擬使用者實際操作來驗證規格的完善。&lt;/p>
+&lt;h2 id="fast">意外的快&lt;/h2>
+&lt;p>相對於 Unit Test（單元測試）過去我對 Cucumber 的印象就是準備起來非常耗時，這是因為我們需要寫成一般人可以閱讀的文件，一步一步的描述操作，然後再去實現每一個步驟的動作，然而熟悉之後其實比想像中還更快。&lt;/p>
+&lt;p>實踐測試最為困難的一個地方，其實是「知道該測什麼」也就是當你不清楚要對什麼做測試的時候，會感受到「這樣做是否有用嗎？」的感覺，也很難直覺地寫出測試，然而從規格下手，測試的目的就非常的明確，其實不用思考太多就能夠完成定義。&lt;/p>
+&lt;p>當 E2E Testing 的測試完成後，我們逐步拆解的物件其實就是單元測試的對象，如此一來在重構過程中補上單元測試，就很自然的將一個完整的測試加入到軟體中，隨著測試的增加反而會覺得開發速度越來越快速，因為很多需要手動檢查或者「邏輯卡關」的部分都會被測試阻擋下來。&lt;/p>
+&lt;h2 id="basic-syntax">基本語法&lt;/h2>
+&lt;p>這系列的文章不會特別說明語法的應用，我會在未來新增一系列針對 Cucumber 測試的文章來補足這部分，這次我們會在文章中將差例子來作為示範。&lt;/p>
+&lt;p>想要實現符合「蒼時在 2023-01-01 訂閱後，畫面上會顯示 2023-01-30 到期的訊息」這條規格，我們可以像這樣撰寫。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-gherkin" data-lang="gherkin">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="c"># features/subscription.feature&lt;/span>&lt;span class="nf">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl">&lt;span class="nf">&lt;/span>&lt;span class="c"># language:zh-TW&lt;/span>&lt;span class="nf">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl">&lt;span class="nf">&lt;/span>&lt;span class="k">功能:&lt;/span>&lt;span class="nf"> 會員訂閱
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">背景:&lt;/span>&lt;span class="nf">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl">&lt;span class="nf">&lt;/span>&lt;span class="k"> 假設&lt;/span>&lt;span class="nf"> 這裡有一些會員
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl">&lt;span class="nf">&lt;/span>&lt;span class="k"> |&lt;/span>&lt;span class="s"> name&lt;/span>&lt;span class="k"> |&lt;/span>&lt;span class="s"> email&lt;/span>&lt;span class="k"> |&lt;/span>&lt;span class="nf">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl">&lt;span class="nf">&lt;/span>&lt;span class="k"> |&lt;/span>&lt;span class="s"> Aotoki&lt;/span>&lt;span class="k"> |&lt;/span>&lt;span class="s"> aotoki@example.com&lt;/span>&lt;span class="k"> |&lt;/span>&lt;span class="nf">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">並且&lt;/span>&lt;span class="nf"> 作為使用者 Aotoki 登入
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl">&lt;span class="nf">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">場景:&lt;/span>&lt;span class="nf"> 當 Aotoki 在當下進行訂閱，會看到 30 天後到期的訊息
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl">&lt;span class="nf">&lt;/span>&lt;span class="k"> 當&lt;/span>&lt;span class="nf"> 我打開訂閱頁面
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">並且&lt;/span>&lt;span class="nf"> 點選 &amp;#34;&lt;/span>&lt;span class="s">訂閱&lt;/span>&lt;span class="nf">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">並且&lt;/span>&lt;span class="nf"> 我打開訂閱狀態頁面
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl">&lt;span class="nf"> &lt;/span>&lt;span class="k">那麼&lt;/span>&lt;span class="nf"> 我會看到 &amp;#34;&lt;/span>&lt;span class="s">30 天後到期&lt;/span>&lt;span class="nf">&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在上面這個 Cucumber 的規格定義中，我們會看到一些關鍵字，像是 &lt;code>功能&lt;/code>、&lt;code>背景&lt;/code> 這類，這些是 Cucumber 用來描述行為跟步驟的關鍵字，剩下的部分基本上都是自訂的「步驟」像是 &lt;code>這裡有一些會員&lt;/code> 和 &lt;code>點選 &amp;quot;訂閱&amp;quot;&lt;/code> 等等。&lt;/p>
+&lt;p>以下是關鍵字的簡介，詳細的資訊可以參考 &lt;a href="https://cucumber.io/docs/gherkin/languages/">Cucumber 文件&lt;/a>的說明。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>關鍵字&lt;/th>
+&lt;th>說明&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>功能&lt;/td>
+&lt;td>定義是什麼功能，建議細一點。如：「新增文章」&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>背景&lt;/td>
+&lt;td>所有場景執行之前要先執行的步驟&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>場景&lt;/td>
+&lt;td>可以視為對應一條 Key Examples，描述想要得到怎樣的效果&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>假設&lt;/td>
+&lt;td>執行動作之前的測試資料準備，像是預先建立好的會員、訂閱方案&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>當&lt;/td>
+&lt;td>實際上執行的動作，通常是使用這個功能的行為&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>那麼&lt;/td>
+&lt;td>結果，驗證動作執行完畢後有得到對應的結果&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>並且&lt;/td>
+&lt;td>連接詞，如果這個步驟跟上一個相同就可以使用&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;blockquote>
+&lt;p>這裡在規格測試時把日期（2023-01-30）改為相對時間 30 天前，這是因為 E2E Testing 是模擬真實使用者操作，比起修改到「指定時間」的造假方式，更應該選擇不需要模擬的方案，同時 30 天後到期也更能反應「每次延長 30 天」的規格，如果沒有實際撰寫可能不會發現這個情況。&lt;/p>
+&lt;/blockquote>
+&lt;h2 id="step-definitation">步驟定義&lt;/h2>
+&lt;p>因為我們讓規格可以用人類能夠理解的方式定義，因此需要讓這些文件的步驟可以被程式執行，Cucumber 會幫助我們解析裡面有意義的關鍵字作為參數（Parameter）然而我們還是需要撰寫對應的描述。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="c1"># features/step_definitions/subscription.rb&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl">&lt;span class="no">Given&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;這裡有一些會員&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">table&lt;/span>&lt;span class="o">|&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl"> &lt;span class="vi">@users&lt;/span> &lt;span class="o">||=&lt;/span> &lt;span class="p">{}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl"> &lt;span class="vi">@passwords&lt;/span> &lt;span class="o">||=&lt;/span> &lt;span class="p">{}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl"> &lt;span class="n">table&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">hashes&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">each&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">row&lt;/span>&lt;span class="o">|&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl"> &lt;span class="nb">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">row&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">delete&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;name&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl"> &lt;span class="vi">@passwords&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="nb">name&lt;/span>&lt;span class="o">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="no">Devise&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">friendly_token&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="o">..&lt;/span>&lt;span class="mi">20&lt;/span>&lt;span class="o">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl"> &lt;span class="vi">@users&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="nb">name&lt;/span>&lt;span class="o">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="no">User&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">create!&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl"> &lt;span class="n">row&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">merge&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="ss">password&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="vi">@passwords&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="nb">name&lt;/span>&lt;span class="o">]&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl"> &lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">id&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>基本上不太需要依靠 FactoryBot 來建立資料，雖然這樣寫起來有點不太好看，然而大多數時候是足夠使用的，一些會被參考的物件，可以先用實例變數暫存起來。&lt;/p>
+&lt;blockquote>
+&lt;p>在 Cucumber 的設計中，整個測試是一個世界（World）裡面會有許多不同的場景，也因此跟 Ruby 常見的 RSpec 每次都重設所有測試環境不太一樣，實例變數（Instance Variable）會是共通的，不過我們還是可以透過一些簡單的處理清除掉測試資料。&lt;/p>
+&lt;/blockquote>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="c1"># features/step_definitions/subscription.rb&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl">&lt;span class="c1"># ...&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl">&lt;span class="no">Given&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;作為使用者 {word} 登入&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="nb">name&lt;/span>&lt;span class="o">|&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl"> &lt;span class="n">visit&lt;/span> &lt;span class="n">new_user_session_path&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl"> &lt;span class="n">fill_in&lt;/span> &lt;span class="s1">&amp;#39;user_email&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">with&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="no">User&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">find&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="vi">@users&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="nb">name&lt;/span>&lt;span class="o">]&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">email&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl"> &lt;span class="n">fill_in&lt;/span> &lt;span class="s1">&amp;#39;user_password&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">with&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="vi">@passwords&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="nb">name&lt;/span>&lt;span class="o">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl"> &lt;span class="n">click_on&lt;/span> &lt;span class="s1">&amp;#39;登入&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl">&lt;span class="no">When&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;我打開訂閱頁面&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl"> &lt;span class="n">visit&lt;/span> &lt;span class="n">plans_path&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">15&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">16&lt;/span>&lt;span class="cl">&lt;span class="no">When&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;我打開訂閱狀態頁面&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">17&lt;/span>&lt;span class="cl"> &lt;span class="n">visit&lt;/span> &lt;span class="n">subscriptions_path&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">18&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">19&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">20&lt;/span>&lt;span class="cl">&lt;span class="no">When&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;點選 {string}&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="o">|&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">21&lt;/span>&lt;span class="cl"> &lt;span class="n">click_on&lt;/span> &lt;span class="n">text&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">22&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">23&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">24&lt;/span>&lt;span class="cl">&lt;span class="no">Then&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;我會看到 {string}&amp;#39;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="o">|&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">25&lt;/span>&lt;span class="cl"> &lt;span class="n">expect&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">page&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">to&lt;/span> &lt;span class="n">have_text&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">26&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>其他的步驟以此類推去實作，雖然 Cucumber 有用中文實作像是 &lt;code>當('我打開訂閱頁面')&lt;/code> 這樣的方法，但還是會推薦使用英文撰寫，步驟內的內容大多是以 RSpec 和 Capybara 為基礎的，這是因為 Cucumber 是以 RSpec 為基礎拓展，某方面來說可以視為 RSpec 的延伸。&lt;/p>
+&lt;blockquote>
+&lt;p>稍微習慣 Cucumber 後，其實會發現只是將以往寫 RSpec 的部分重新改寫成數個小步驟，然後透過 Cucumber 的功能定義檔案組合起來。&lt;/p>
+&lt;/blockquote></content:encoded><media:content url="https://blog.aotoki.me/cover/2023-rails-in-practice.jpg" type="image/jpeg" medium="image"/></item><item><title>我們對 Null Object 的使用合理嗎？</title><link>https://blog.aotoki.me/posts/2023/07/26/does-our-null-object-reasonable/</link><category>經驗</category><category>Domain-Driven Design</category><category>Null Object</category><pubDate>Wed, 26 Jul 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/07/26/does-our-null-object-reasonable/</guid><description>&lt;p>最近工作上以及私下跟朋友討論時，剛好都遇到了 &lt;code>Null&lt;/code>（不存在）類型的處理，通常我不會特別去在意這件事情，然而近年讀了一些關於 &lt;code>Null&lt;/code> 的文章後（如：&lt;a href="https://www.lucidchart.com/techblog/2015/08/31/the-worst-mistake-of-computer-science/">The worst mistake of computer science&lt;/a>）對於這件事情的看法有不少改觀。&lt;/p></description><content:encoded>&lt;p>最近工作上以及私下跟朋友討論時，剛好都遇到了 &lt;code>Null&lt;/code>（不存在）類型的處理，通常我不會特別去在意這件事情，然而近年讀了一些關於 &lt;code>Null&lt;/code> 的文章後（如：&lt;a href="https://www.lucidchart.com/techblog/2015/08/31/the-worst-mistake-of-computer-science/">The worst mistake of computer science&lt;/a>）對於這件事情的看法有不少改觀。&lt;/p>
+&lt;h2 id="null-or-empty">是「沒有」還是「空的」&lt;/h2>
+&lt;p>相信很多人都看過 &lt;a href="https://www.reddit.com/r/ProgrammerHumor/comments/6f68rv/difference_between_0_and_null/">0 vs null&lt;/a> 這張迷因圖，如果衛生紙用完了是「空的（Empty）」狀態，如果一開始就沒有衛生紙，那就是「沒有（Null）」的情境。&lt;/p>
+&lt;p>然而在中文上的翻譯，我們通常用&lt;a href="https://terms.naer.edu.tw/detail/ed0081f720729228a209db53914b60bd/?seq=8">空&lt;/a>來描述 &lt;code>Null&lt;/code> 的情境，那就讓「空的」和「空值」看起來非常相似，在&lt;a href="https://zh.wikipedia.org/zh-tw/%E7%A9%BA%E5%80%BC_(SQL)">維基百科 - 空值（SQL）&lt;/a>上的描述則是用「空值（Null）」和「零值（0）」來區分，還是非常類似的。&lt;/p>
+&lt;p>尤其在 Ruby、JavaScript 這類語言，想要區分出「不存在」跟「沒有」的使用情境，通常會更加困難，如果是 Golang、C#、Java 這類語言，因為型別檢查的關係是不會有這樣的情境發生。&lt;/p>
+&lt;blockquote>
+&lt;p>如果在 Golang 中給定一個欄位 &lt;code>age&lt;/code> 型別為 &lt;code>int&lt;/code> 那麼預設就會是 &lt;code>0&lt;/code> 而不會是 &lt;code>Null&lt;/code> 在 Ruby 中則會因為不知道型別，那麼就會維持「不存在」的狀況，自然變成「沒有」&lt;/p>
+&lt;/blockquote>
+&lt;h2 id="usually-is-empty">大多是空的&lt;/h2>
+&lt;p>實務上來說，我們在軟體開發遇到的大多數情況都會是 Empty 的狀況，雖然會出現 Null 的情境，主要還是在找不到資料這類狀況為主，通常我們想處理的都是 Empty 的狀況。&lt;/p>
+&lt;p>舉個案例，近期有人跟我討論 ESLint 的警告問題，其中一個是 TypeScript 的實作。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ts" data-lang="ts">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="kr">type&lt;/span> &lt;span class="nx">TimeLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl"> &lt;span class="nx">hours?&lt;/span>: &lt;span class="kt">number&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl"> &lt;span class="nx">minutes?&lt;/span>: &lt;span class="kt">number&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl"> &lt;span class="nx">seconds?&lt;/span>: &lt;span class="kt">number&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl">&lt;span class="c1">// ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="nx">Countdown&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">({&lt;/span> &lt;span class="nx">expiredTime&lt;/span> &lt;span class="p">})&lt;/span> &lt;span class="o">=&amp;gt;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl"> &lt;span class="kd">var&lt;/span> &lt;span class="nx">timeLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl"> &lt;span class="nx">calculateTimeLeft&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">timeLeft&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">expiredTime&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl"> &lt;span class="c1">// ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="p">(&amp;lt;&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;{{&lt;/span> &lt;span class="nx">timeLeft&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">hours&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">}}&amp;lt;/&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;&lt;/span> &lt;span class="c1">// 這裡被警告
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">15&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;{{&lt;/span> &lt;span class="nx">timeLeft&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">minutes&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">}}&amp;lt;/&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;&lt;/span> &lt;span class="c1">// 這裡被警告
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">16&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;{{&lt;/span> &lt;span class="nx">timeLeft&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">seconds&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">}}&amp;lt;/&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;&lt;/span> &lt;span class="c1">// 這裡被警告
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">17&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span> &lt;span class="p">&amp;lt;/&amp;gt;)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">18&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>當我們在處理這個狀況時，我們讓他保持「沒有」的狀態直到實際使用，那麼就需要在每一個地方「檢查是否存在」然後再賦予預設值。&lt;/p>
+&lt;p>然而，預設值不應該是在物件初始化階段就定義好的嗎？因此實際上應該這樣做。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ts" data-lang="ts">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="kr">type&lt;/span> &lt;span class="nx">TimeLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl"> &lt;span class="nx">hours&lt;/span>: &lt;span class="kt">number&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl"> &lt;span class="nx">minutes&lt;/span>: &lt;span class="kt">number&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl"> &lt;span class="nx">seconds&lt;/span>: &lt;span class="kt">number&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="nx">newEmptyTimeLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">()&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="nx">TimeLeft&lt;/span> &lt;span class="o">=&amp;gt;&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="nx">hours&lt;/span>: &lt;span class="kt">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">minutes&lt;/span>: &lt;span class="kt">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">seconds&lt;/span>: &lt;span class="kt">0&lt;/span>&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl">&lt;span class="c1">// ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span>&lt;span class="kr">const&lt;/span> &lt;span class="nx">calculateTimeLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">expiredTime&lt;/span>: &lt;span class="kt">Date&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="nx">TimeLeft&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl"> &lt;span class="kd">var&lt;/span> &lt;span class="nx">timeLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">newEmptyTimeLeft&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl"> &lt;span class="c1">// ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="nx">timeLeft&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">15&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">16&lt;/span>&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="nx">Countdown&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">({&lt;/span> &lt;span class="nx">expiredTime&lt;/span> &lt;span class="p">})&lt;/span> &lt;span class="o">=&amp;gt;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">17&lt;/span>&lt;span class="cl"> &lt;span class="kr">const&lt;/span> &lt;span class="nx">timeLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">calculateTimeLeft&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">timeLeft&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">expiredTime&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">18&lt;/span>&lt;span class="cl"> &lt;span class="c1">// ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">19&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">20&lt;/span>&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="p">(&amp;lt;&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">21&lt;/span>&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;{{&lt;/span> &lt;span class="nx">timeLeft&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">hours&lt;/span> &lt;span class="p">}}&amp;lt;/&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">22&lt;/span>&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;{{&lt;/span> &lt;span class="nx">timeLeft&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">minutes&lt;/span> &lt;span class="p">}}&amp;lt;/&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">23&lt;/span>&lt;span class="cl"> &lt;span class="p">&amp;lt;&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;{{&lt;/span> &lt;span class="nx">timeLeft&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">seconds&lt;/span> &lt;span class="p">}}&amp;lt;/&lt;/span>&lt;span class="nt">Text&lt;/span>&lt;span class="p">&amp;gt;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">24&lt;/span>&lt;span class="cl"> &lt;span class="p">&amp;lt;/&amp;gt;)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">25&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在真實的開發情境裡面，有不少地方是可以這樣調整去消除掉 Null 的情況，我們需要的通常是一個預設值。&lt;/p>
+&lt;h2 id="where-has-null">哪裡有 NULL&lt;/h2>
+&lt;p>我們以 Domain-Driven Design（領域驅動設計）的 Domain Model（領域模型）來來看，其中 Entity（實體）就是一個會有 Null 情況的物件類型。&lt;/p>
+&lt;p>首先，Entity 的定義上通常會具備一個 Identity（識別，或者說 ID）來表示這是一個獨立個體，假設有一個「使用者」的概念存在於一個以 Rails 開發的系統，我們通常會定義一個 Model 如下。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">User&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicationRecord&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="c1"># attribute :id, type: :integer&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="c1"># attribute :name, type: :name&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="c1"># attribute :age, type: :integer&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl"> &lt;span class="c1"># ...&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在 Ruby on Rails 中我們要找到一個使用者，可以像這樣進行查詢。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">ProfileController&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicatonController&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">show&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="vi">@user&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="no">User&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">find_by&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">id&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="n">params&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="ss">:id&lt;/span>&lt;span class="o">]&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在上述的程式碼中，當我們找不到某個 ID 的使用者時，就會得到 Null 的結果。然而，這樣的寫法很容易讓後續的程式出錯，最後需要大量的 &lt;code>if @user&lt;/code> 判斷式來檢查是否有資料。&lt;/p>
+&lt;p>因此，更多會採用這樣的做法。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">ProfileController&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicatonController&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">show&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="vi">@user&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="no">User&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">find&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">params&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="ss">:id&lt;/span>&lt;span class="o">]&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="k">rescue&lt;/span> &lt;span class="no">ActiveRecord&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="no">RecordNotFound&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl"> &lt;span class="n">render&lt;/span> &lt;span class="ss">:user_not_found&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>如果找不到，對 Rails 來說是一種「錯誤（Error）」的情境，因此會拋出 &lt;code>ActiveRecord::RecordNotFound&lt;/code> 的訊息，我們還能直接善加利用，顯示出找不到使用者的畫面。&lt;/p>
+&lt;p>那麼，如果是 Null Object 的情境又會是如何呢？&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">ProfileController&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicatonController&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">show&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="vi">@user&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="no">User&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">find_or_initialize_by&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">id&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="n">params&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="ss">:id&lt;/span>&lt;span class="o">]&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">user&lt;/span>&lt;span class="o">|&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="n">user&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s1">&amp;#39;Guest&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在 Rails 還提供了 &lt;code>#find_or_initialize_by&lt;/code> 的方法，當遇到 Null 的狀況時，產生一個新的 &lt;code>User&lt;/code> 物件並且設定預設值。&lt;/p>
+&lt;p>這樣的寫法似乎還是有點不夠優雅，因為在 Rails 中我們可以對資料庫欄位設定預設值，或者利用 &lt;code>attribute&lt;/code> 的 DSL（領域特定語言）來設定預設值，那麼在大多數的狀況下只需要使用 &lt;code>#find_or_initialize_by&lt;/code> 幾乎就涵蓋大多情境。&lt;/p>
+&lt;p>從概念上來反推，會發生 Null 的情境主要是我們想去尋找某個「實際存在的物體（Entity，實體）」卻因為實際不存在而找不到。&lt;/p>
+&lt;p>然而，如果是某個實體上的數值（Value）大多是可以存在預設值的，像是 User 身上的 &lt;code>name&lt;/code> 或者 &lt;code>age&lt;/code> 都可以給定預設的數值，如果是一個複雜的物件，也能夠利用 Value Object（數值物件）的方式處理。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">User&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="no">ApplicationRecord&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl"> &lt;span class="c1"># attribute :id, type: :integer&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl"> &lt;span class="c1"># attribute :name, type: :name&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl"> &lt;span class="c1"># attribute :age, type: :integer&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl"> &lt;span class="n">composed_of&lt;/span> &lt;span class="ss">:balance&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">class_name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s1">&amp;#39;Money&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">mapping&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="sx">%w(balance amount)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl">&lt;span class="c1"># app/models/money.rb&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">Money&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl"> &lt;span class="kp">attr_reader&lt;/span> &lt;span class="ss">:amount&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">:currency&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">initialize&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">amount&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">currency&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="ss">:TWD&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl"> &lt;span class="vi">@amount&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">amount&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="mi">0&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">15&lt;/span>&lt;span class="cl"> &lt;span class="vi">@currenncy&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">currency&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">16&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">17&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">18&lt;/span>&lt;span class="cl"> &lt;span class="c1"># ...&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">19&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>以上面的例子來看，使用者身上的 &lt;code>balance&lt;/code> 欄位是一種 &lt;code>Money&lt;/code>（金錢）的概念，會轉換成一個 Value Object 來處理，這個 &lt;code>Moeny&lt;/code> 物件身上也會預設特定的幣種（Currency）那麼即使 &lt;code>balance&lt;/code> 是 &lt;code>nil&lt;/code> 的狀況下，也會被當作 &lt;code>#&amp;lt;Money amount=0, currency=:TWD&amp;gt;&lt;/code> 的方式操作，就能避免需要使用 &lt;code>if @user.balance&lt;/code> 的判斷情境，因為對於一個數值來說具有「預設值」比「不存在」更加合理（或者說更常見）&lt;/p>
+&lt;h2 id="usage-of-null-object">Null Object 的應用&lt;/h2>
+&lt;p>從前面針對 Empty、Null 兩種情境的說明，大致上可以看出來 Null Object 有點類似「預設值」的感覺，當我們找不到某個實體的時候，給予一個預設的行為，而且很高的機率是不做任何事情。&lt;/p>
+&lt;p>從維基百科對 &lt;a href="https://en.wikipedia.org/wiki/Null_object_pattern">Null Object Pattern&lt;/a> 的介紹來看，最早是使用 Void Value 來描述這種物件，是不是跟某個數值不存在時，給予一個「預設數值」的意思非常接近。&lt;/p>
+&lt;p>假設大多數情境都是對「找不到」做備援，那麼我們更應該思考的是「預設值」的設定，如果不應該有預設值，那應該要設計為建立某個實體的必填欄位，進而確保我們的行為是一致的。&lt;/p>
+&lt;p>以最近工作上的例子，我們原本設計 &lt;code>tags&lt;/code> 在沒有任何資料時，會在 API 回應中不回傳這個欄位，那麼在使用者端呼叫時，就需要這樣處理。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="vi">@status&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="vi">@api&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">status_of&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">params&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="ss">:report_id&lt;/span>&lt;span class="o">]&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl">&lt;span class="k">if&lt;/span> &lt;span class="vi">@status&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">tags&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">present?&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="vi">@status&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">tags&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">each&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">tag&lt;/span>&lt;span class="o">|&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl"> &lt;span class="c1"># ...&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>然而，我們實際上是可以給 &lt;code>[]&lt;/code> 做為預設值的，那麼實作上就會變成&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="vi">@status&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="vi">@api&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">status_of&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">params&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="ss">:report_id&lt;/span>&lt;span class="o">]&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl">&lt;span class="vi">@status&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">tags&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">each&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">tag&lt;/span>&lt;span class="o">|&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="c1"># ...&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>這樣讓使用者端更簡潔，並且能夠減少多餘的判斷，因為我們將判斷的邏輯隱含到了提取陣列元素的程式語言底層中，並且具有相同的意義。&lt;/p>
+&lt;p>另一方面，我們還有一個 &lt;code>score&lt;/code> 的數值確實有可能不存在，那麼該如何處理呢？因為實作上使用 Golang 來實現，可以參考一下 Golang 的 &lt;a href="https://pkg.go.dev/database/sql">database/sql&lt;/a> 做了怎樣的處理。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="kd">type&lt;/span> &lt;span class="nx">NullString&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="nx">String&lt;/span> &lt;span class="kt">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="nx">Valid&lt;/span> &lt;span class="kt">bool&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>對 Golang 來說，是不能有 Null 的數值存在的，除非他是一個指標（Pointer）指向一個沒有數值的位址（跟 Entity 的 ID 找不到對應的物件概念相同）但是在資料庫中存在著 Null 的概念，因此對應的方式就是用 &lt;code>Valid&lt;/code>（正確）來表示是否存在資料，這剛好就是一種 Null Object 或者 Value Object 的變體。&lt;/p>
+&lt;p>也因此，我們可以將 API 的回傳設計成這樣。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-json" data-lang="json">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl"> &lt;span class="nt">&amp;#34;id&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="nt">&amp;#34;score&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="nt">&amp;#34;value&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl"> &lt;span class="nt">&amp;#34;verified&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="kc">false&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl"> &lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">7&lt;/span>&lt;span class="cl"> &lt;span class="nt">&amp;#34;tags&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">8&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在使用端，我們可以設計一個 Value Object 叫做 &lt;code>Score&lt;/code> 來處理。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="k">class&lt;/span> &lt;span class="nc">Score&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl"> &lt;span class="kp">attr_reader&lt;/span> &lt;span class="ss">:value&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">:verified&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">initialize&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">verified&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kp">false&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl"> &lt;span class="vi">@value&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">value&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl"> &lt;span class="vi">@verified&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">verified&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl"> &lt;span class="k">def&lt;/span> &lt;span class="nf">allowed?&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">score&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl"> &lt;span class="vi">@verified&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="vi">@value&lt;/span> &lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">score&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">value&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl"> &lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl"> &lt;span class="c1"># ...&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl">&lt;span class="k">end&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>像這樣，我們就可以直接把 Null Object 要做的預設行為隱含在 Value Object 中，再做各種不同類型處理的時候就可以不用做額外的判斷，像是下面這樣使用。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-ruby" data-lang="ruby">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="vi">@status&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="vi">@api&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">status_of&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">params&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="ss">:report_id&lt;/span>&lt;span class="o">]&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl">&lt;span class="k">return&lt;/span> &lt;span class="n">upload&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="vi">@status&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">allowed?&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="no">UPLOAD_SCORE&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl">&lt;span class="k">return&lt;/span> &lt;span class="n">refresh_later&lt;/span> &lt;span class="k">unless&lt;/span> &lt;span class="vi">@status&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">valid?&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl">&lt;span class="c1"># others ...&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>這樣一來，程式中就可以減少很多 Null 類型的檢查，也符合 Null Object 設計的目的。&lt;/p>
+&lt;blockquote>
+&lt;p>在 Rails 裡面經常遇到字串可能是 &lt;code>&amp;quot;&amp;quot;&lt;/code> 或者 &lt;code>nil&lt;/code>（Null） 的情況，因此在 &lt;code>ActiveSupport&lt;/code> 對 Ruby 做的擴充，還有一個叫做 &lt;code>#blank?&lt;/code> 的方法，會檢查 &lt;code>&amp;quot;&amp;quot;&lt;/code> 或者 &lt;code>nil&lt;/code> 來回傳 &lt;code>true&lt;/code>，然而如果能保證不會有 &lt;code>nil&lt;/code> 的狀況出現，使用 Ruby 內建的 &lt;code>#empty?&lt;/code> 方法即可（&lt;code>nil&lt;/code> 在 Ruby 是物件，但沒有 &lt;code>#empty?&lt;/code> 方法）&lt;/p>
+&lt;/blockquote></content:encoded><media:content url="https://blog.aotoki.me/images/2023-07-26-does-our-null-object-reasonable/thumbnail.jpg" type="image/jpeg" medium="image"/></item><item><title>獲取規格的技巧 - Rails 開發實踐</title><link>https://blog.aotoki.me/posts/2023/07/21/rails-in-practice-acquire-specification/</link><category>規格</category><category>經驗</category><category>心得</category><category>Rails</category><category>Rails 開發實踐</category><pubDate>Fri, 21 Jul 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/07/21/rails-in-practice-acquire-specification/</guid><description>&lt;p>我們在工作的過程中大多是以需求（Requirement）當基準來進行開發的，然而要盡可能的接近規格（Specification）就需要多花一些力氣。大多數人其實下意識的都有實行這個動作，因為透過大量的溝通還是可以取得足夠的資訊，然而這樣做的效率跟成功率不一定足夠。&lt;/p></description><content:encoded>&lt;p>我們在工作的過程中大多是以需求（Requirement）當基準來進行開發的，然而要盡可能的接近規格（Specification）就需要多花一些力氣。大多數人其實下意識的都有實行這個動作，因為透過大量的溝通還是可以取得足夠的資訊，然而這樣做的效率跟成功率不一定足夠。&lt;/p>
+&lt;h2 id="start-with-confirm">從確認開始&lt;/h2>
+&lt;p>在開始之前，你會怎麼確認「會員制訂閱功能」這樣的需求應該如何實現呢？接下來我們會以這個還算常見的功能作為例子，一步步從獲取規格到實現來做為這系列的主軸。&lt;/p>
+&lt;p>大多數情況，我們會跟需求提供者進行確認，像是「訂閱的週期是什麼？」「需要動態的調整方案嗎？」等等，這些都可以取得一些情報，然而不一定是足夠精確的，我們可能會得到像是「未來可能會以年費方式收費」「以後可能會有新的方案」之類的回覆，但這並無法幫我們確定如何開發。&lt;/p>
+&lt;p>正因如此，我們通常會套用一些常見的設計來應用到這個功能，最後反而總是處於一種「好像沒問題，但又有點不好修改」的窘境之中。&lt;/p>
+&lt;h2 id="live-in-the-moment">關注當下&lt;/h2>
+&lt;p>實際上，獲取規格的前提還是以關注現在的狀況為主。實際上我們對未來有再多的預測，也無法保證能夠適應所有問題，敏捷開發（Agile，也可翻譯為適應）就是為此存在的。&lt;/p>
+&lt;p>我們需要思考的是，當下這個需求如何在最少的調整符合需求，剩下的問題則是架構上的議題，因此如何在未來需求出現變化的時候，保有足夠的修改彈性，就需要搭建良好的架構，這部分以 Clean Architecture 最廣為人知，我們也會在後續的實作中放入一些這樣的觀念。&lt;/p>
+&lt;h2 id="ranking">分級制度&lt;/h2>
+&lt;p>確立規格的過程中不是一次性的，我們會反覆的進行確認跟篩選，因此我將這種技巧稱之為分級制度。&lt;/p>
+&lt;p>這是我在 2022 年為期一週的 LeSS in Action 工作坊所學到的技巧，我們將一個功能進行細化（Detaling）的過程，會分成概要（General）、範圍（Scope）、假設（Assumption）與關鍵案例（Key Examples）四個項目，雖然沒有限定要依序處理，然而我認為依序思考是個很不錯的方式。&lt;/p>
+&lt;p>General 其實就是這個功能的描述，其實就是需求本身，因此我們可能會用「提供訂閱會員特殊權限的功能」這樣的方式去描述，但這樣的資訊太過缺乏，我們需要更近一步的分析。&lt;/p>
+&lt;p>Scope 會開始嘗試限縮這些問題，他可能在未來被改變也可能當下無法訂出任何限制都有可能，因此我們可能會從需求提供者得到「只有每月扣款，每次延展 30 天」之類的資訊，至少我們可以在初期不考慮月份長度、年度訂閱之類的問題。&lt;/p>
+&lt;p>Assumption 是不確定的部分，如果被確認了就會變成 Scope 的一部分，這也是為什麼我們需要來回的確認，因為只有像這樣子不斷的限縮範圍，才能將需求提供者跟我們的認知對齊，得到一個接近的結果。&lt;/p>
+&lt;p>Key Examples 是相當重要的一步，我們可以想像他是一個 User Story（使用者故事）的片段，這些片段會「互相約束」來把規格明確的定義下來，當我們獲取必要資訊後，要能夠寫出像是「當蒼時在 2023-01-01 初次訂閱後，會看到 2023-01-30 過期的訊息」以及「假設蒼時在 2023-01-01 訂閱過期，自動續訂後會看到 2023-01-30 過期的訊息」這樣的舉例，這些例子剛好提示了延展 30 天的資訊，以及初次訂閱和自動續訂的情境。&lt;/p></content:encoded><media:content url="https://blog.aotoki.me/cover/2023-rails-in-practice.jpg" type="image/jpeg" medium="image"/></item><item><title>將需求實現的準備 - Rails 開發實踐</title><link>https://blog.aotoki.me/posts/2023/07/14/rails-in-practice-prepare-for-requirement/</link><category>經驗</category><category>心得</category><category>Rails</category><category>Rails 開發實踐</category><pubDate>Fri, 14 Jul 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/07/14/rails-in-practice-prepare-for-requirement/</guid><description>&lt;p>我們想要去「實踐」一個想法，大多數情況都是「做看看」來驗證是否可以成功，然而在這個過程中，我們需要有多少次的失敗呢？同時，為什麼有些人總是很容易的就成功，而自己卻總是沒辦法順利前進呢？&lt;/p></description><content:encoded>&lt;p>我們想要去「實踐」一個想法，大多數情況都是「做看看」來驗證是否可以成功，然而在這個過程中，我們需要有多少次的失敗呢？同時，為什麼有些人總是很容易的就成功，而自己卻總是沒辦法順利前進呢？&lt;/p>
+&lt;h2 id="science">科學的方法&lt;/h2>
+&lt;p>印象中，我突然發現一些讀過研究所（碩士、博士）的朋友，在處理事情的方式跟手法跟自己是非常不一樣的，這時候我才意識到高等教育要學習的其實就是如何用科學的去解決問題。&lt;/p>
+&lt;p>然而，這是一件說起來容易卻相當困難的事情，尤其在我們的文化中「提問」是難以開口的，但這卻是我們要實現想法非常關鍵的一個步驟。我們需要去問需求提供者，他所想像的是什麼，然後去驗證我們能不能實現。&lt;/p>
+&lt;blockquote>
+&lt;p>後來我從一些業界前輩、顧問相關主題的書上，都發現了類似的處理方式，也就是要去找到問題的核心。&lt;/p>
+&lt;/blockquote>
+&lt;h2 id="requirement">不精確的需求&lt;/h2>
+&lt;p>什麼是使用者需求呢？簡單來說就是像肚子餓、想回家這樣的問題，但是當我們深入思考「肚子餓」的原因時，又會發現對方有許多東西都不想吃，最後只能用萬能的「麥當勞」來解決問題。&lt;/p>
+&lt;p>實際上，不想吃的原因如果是在自己一個人的情況，我們是可以精確的區分出像是昨天吃過、正在減肥、宗教信仰等等問題，但在面對其他人的時候我們並沒有這麼多情報，因此就需要透過分析需求的方式來找到「規格」並且提供恰當的解決方案。&lt;/p>
+&lt;blockquote>
+&lt;p>有段時間我為了能讓喜歡的女生喜歡自己，花了不少時間學習，像是「吃飯」的問題也是很常在兩性關係的主題被提到，雖然當時我沒辦法意識到分析問題的方式，另外就是在軟體開發領域的問題分析太過詳細也許會變成反效果也說不定。&lt;/p>
+&lt;/blockquote>
+&lt;h2 id="specification">規格的確立&lt;/h2>
+&lt;p>規格（Specification）跟需求（Requirement）最大的差異就是精確程度，如果是規格可能會說「想吃青花椒的麻辣鍋」但如果是需求頂多會得到「肚子餓」或者「想吃火鍋」之類的訊息。&lt;/p>
+&lt;p>我們在學習的過程中，大多是使用教材設定好的規格，因此在實際工作的時候是很難預測到客戶會給出怎樣的要求，最後就變成「腦補」的形式去實現功能，那麼就有可能是不合要求，或者看似正常卻隱藏不少問題。&lt;/p>
+&lt;p>幸好這些問題經過業界前輩們多年的努力，還有數百年來科學家累積的經驗，我們是有一套有系統的方式，逐步地推進去理解並找出規格的。&lt;/p></content:encoded><media:content url="https://blog.aotoki.me/cover/2023-rails-in-practice.jpg" type="image/jpeg" medium="image"/></item><item><title>RITE 的結構 - mruby-go</title><link>https://blog.aotoki.me/posts/2023/07/12/mruby-go-the-rite-structure/</link><category>mruby</category><category>mruby-go</category><category>Ruby</category><category>Golang</category><category>筆記</category><pubDate>Wed, 12 Jul 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/07/12/mruby-go-the-rite-structure/</guid><description>&lt;p>&lt;a href="https://mruby.org">mruby&lt;/a> 透過編譯器（Compiler，通常是 &lt;code>mrbc&lt;/code>）編譯後，會產生 &lt;code>mrb&lt;/code> 格式的二進位檔案，這個檔案的格式被稱作 RITE 如果要運行編譯後的 mruby 程式碼，就需要能夠解析並且讀取。&lt;/p></description><content:encoded>&lt;p>&lt;a href="https://mruby.org">mruby&lt;/a> 透過編譯器（Compiler，通常是 &lt;code>mrbc&lt;/code>）編譯後，會產生 &lt;code>mrb&lt;/code> 格式的二進位檔案，這個檔案的格式被稱作 RITE 如果要運行編譯後的 mruby 程式碼，就需要能夠解析並且讀取。&lt;/p>
+&lt;h2 id="structure">結構&lt;/h2>
+&lt;p>RITE 的結構大致上分為兩個部分，&lt;a href="https://github.com/mruby/mruby/blob/3.2.0/include/mruby/dump.h#L81-L88">rite_binary_header&lt;/a> 以及數個 Section（區段）所組成，&lt;code>rite_binary_header&lt;/code> 會紀錄這個二進位檔案的格式、mruby 版本、編譯器資訊等等。&lt;/p>
+&lt;p>區段基本上分為四種，分別是 &lt;code>irep&lt;/code>、&lt;code>debug&lt;/code>、&lt;code>lv&lt;/code>（Local Variable）、&lt;code>footer&lt;/code>（無意義）四個類型，如果沒有特別指定要包含 &lt;code>debug&lt;/code> 區段，實際上只會有另外三個類型。&lt;/p>
+&lt;p>每個區段都會有自己的 Section Header 用來識別，除了 &lt;code>irep&lt;/code> 還會有額外的 &lt;code>rite_version&lt;/code> 的版本資訊外，其他區段都由 &lt;code>char[4]&lt;/code> 的識別（Identity，&lt;code>ident&lt;/code>）和 &lt;code>uint32&lt;/code> 的區段大小所組成。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="ln">1&lt;/span>&lt;span class="cl">&lt;span class="c1">// example irep section
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">2&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">rite_section_irep_header&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">3&lt;/span>&lt;span class="cl"> &lt;span class="kt">uint8_t&lt;/span> &lt;span class="n">section_ident&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">4&lt;/span>&lt;span class="p">];&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">4&lt;/span>&lt;span class="cl"> &lt;span class="kt">uint8_t&lt;/span> &lt;span class="n">section_size&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">4&lt;/span>&lt;span class="p">];&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">5&lt;/span>&lt;span class="cl"> &lt;span class="kt">uint8_t&lt;/span> &lt;span class="n">rite_version&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">4&lt;/span>&lt;span class="p">];&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">6&lt;/span>&lt;span class="cl">&lt;span class="p">};&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>了解這些後，我們就能夠用 Golang 讀取這些資訊。&lt;/p>
+&lt;h2 id="binaryheader">BinaryHeader&lt;/h2>
+&lt;p>讀取 &lt;code>rite_binary_header&lt;/code> 的方式並不困難，我們只需要定義一個 &lt;code>BinaryHeader&lt;/code> 的結構，並且使用 Sized Bytes（固定大小的 &lt;code>byte&lt;/code> 陣列）就可以讓 &lt;code>binary&lt;/code> 套件的 &lt;a href="https://pkg.go.dev/encoding/binary#Read">Read&lt;/a> 方法正確的將數值填入。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="kd">type&lt;/span> &lt;span class="nx">BinaryHeader&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl"> &lt;span class="nx">Identifier&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">4&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="kt">byte&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl"> &lt;span class="nx">Version&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl"> &lt;span class="nx">Major&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">4&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="kt">byte&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl"> &lt;span class="nx">Minor&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">4&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="kt">byte&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl"> &lt;span class="nx">Size&lt;/span> &lt;span class="kt">uint32&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl"> &lt;span class="nx">Compiler&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl"> &lt;span class="nx">Name&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">4&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="kt">byte&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl"> &lt;span class="nx">Version&lt;/span> &lt;span class="kt">uint32&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl">&lt;span class="kd">func&lt;/span> &lt;span class="nf">ReadHeader&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">r&lt;/span> &lt;span class="nx">io&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Reader&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="nx">BinaryHeader&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">error&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">15&lt;/span>&lt;span class="cl"> &lt;span class="nx">header&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">BinaryHeader&lt;/span>&lt;span class="p">{}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">16&lt;/span>&lt;span class="cl"> &lt;span class="nx">err&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">binary&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Read&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">r&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">binary&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">BigEndian&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">header&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">17&lt;/span>&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">nil&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">18&lt;/span>&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="kc">nil&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">19&lt;/span>&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">20&lt;/span>&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="nx">header&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kc">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">21&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="sections">Sections&lt;/h2>
+&lt;p>讀取區段的方式比較複雜，會在後續的文章依序介紹。如果想要區分出一個區段，我們可以加入 &lt;code>SectionHeader&lt;/code> 結構，將共用的區段資訊提取出來。&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="ln"> 1&lt;/span>&lt;span class="cl">&lt;span class="kd">type&lt;/span> &lt;span class="nx">SectionHeader&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 2&lt;/span>&lt;span class="cl"> &lt;span class="nx">Identity&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">4&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="kt">byte&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 3&lt;/span>&lt;span class="cl"> &lt;span class="nx">Size&lt;/span> &lt;span class="kt">uint32&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 4&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 5&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 6&lt;/span>&lt;span class="cl">&lt;span class="kd">func&lt;/span> &lt;span class="nf">ReadeSection&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">r&lt;/span> &lt;span class="nx">io&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Reader&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">remain&lt;/span> &lt;span class="kt">uint32&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="nx">Section&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">error&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 7&lt;/span>&lt;span class="cl"> &lt;span class="nx">header&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">SectionHeader&lt;/span>&lt;span class="p">{}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 8&lt;/span>&lt;span class="cl"> &lt;span class="nx">err&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">binary&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Read&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">r&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">binary&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">BigEndian&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">header&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln"> 9&lt;/span>&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">nil&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">10&lt;/span>&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="kc">nil&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">11&lt;/span>&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">12&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">13&lt;/span>&lt;span class="cl"> &lt;span class="nx">isOverSize&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">header&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Size&lt;/span> &lt;span class="p">&amp;gt;&lt;/span> &lt;span class="nx">remain&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">14&lt;/span>&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="nx">isOverSize&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">15&lt;/span>&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="kc">nil&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">errors&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">New&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;section size is larger than binary&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">16&lt;/span>&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">17&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">18&lt;/span>&lt;span class="cl"> &lt;span class="c1">// ...
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">19&lt;/span>&lt;span class="cl">&lt;span class="c1">&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">20&lt;/span>&lt;span class="cl"> &lt;span class="nx">sectionHeaderSize&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">uint32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">unsafe&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">SizeOf&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">SectionHeader&lt;/span>&lt;span class="p">{}))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">21&lt;/span>&lt;span class="cl"> &lt;span class="nx">noopBuffer&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nb">make&lt;/span>&lt;span class="p">([]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">header&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Size&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="nx">sectionHeaderSize&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">22&lt;/span>&lt;span class="cl"> &lt;span class="nx">_&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">r&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Read&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">noopBuffer&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">23&lt;/span>&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">nil&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">24&lt;/span>&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="nx">ni&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">25&lt;/span>&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">26&lt;/span>&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">27&lt;/span>&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="nx">section&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kc">nil&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="ln">28&lt;/span>&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>在虛擬機器運作中，不論是 &lt;code>BinaryHeader&lt;/code> 或者 &lt;code>SectionHeader&lt;/code> 都是非必要的資訊，因此在實際的實作中會拋棄這些資料。&lt;/p>
+&lt;p>在 RITE 的設計中，Header 所包含的大小資訊會包含 Header 的大小，因此在計算的時候需要扣掉 Header 的大小，在上述的範例中我們會用 &lt;code>header.Size - sectionHeaderSize&lt;/code> 來當做要製作的 &lt;code>noopBuffer&lt;/code> 陣列的大小，確保 &lt;code>io.Reader&lt;/code> 讀取時可以正確地停在下一個區段的起始點。&lt;/p>
+&lt;blockquote>
+&lt;p>在 C 語言中的陣列可以透過指標（Pointer）的特性切換到任意的位置處理，然而在 Golang 中被封裝成 &lt;code>io.Reader&lt;/code> 後我們只能依序讀取，那麼讀取的游標（Cursor）停止的位置就變得非常重要。&lt;/p>
+&lt;/blockquote>
+&lt;hr>
+&lt;p>&lt;a href="https://github.com/elct9620/mruby-go">mruby-go&lt;/a> 是完全使用 Golang 來實現 mruby 的計畫，預期讓 Golang 可以運行 Ruby 來實現像是 DSL 或是 Hook 這類處理，讓開發有更多的彈性。&lt;/p></content:encoded><media:content url="https://blog.aotoki.me/cover/2023-mruby-go.jpg" type="image/jpeg" medium="image"/></item><item><title>前言 - Rails 開發實踐</title><link>https://blog.aotoki.me/posts/2023/07/07/rails-in-practice-foreword/</link><category>經驗</category><category>心得</category><category>Rails</category><category>Rails 開發實踐</category><pubDate>Fri, 07 Jul 2023 00:00:00 +0000</pubDate><author>contact@aotoki.me (蒼時弦也)</author><guid>https://blog.aotoki.me/posts/2023/07/07/rails-in-practice-foreword/</guid><description>&lt;p>2021 年底，我開始思考什麼是「開心地寫程式」這件事情，如果單純是興趣也不跟其他人合作，那麼是很容易的。然而，如果想要將寫程式作為工作，就一定會面臨到跟其他人協力的問題，很多時候會是我們抱怨「寫這段程式的人在想什麼」的原因。&lt;/p>
+&lt;p>也就是說，如果能讓眾多的初階開發者（Junior Developer）寫出更好的程式，那麼對所有人來說都能夠更加專注在享受寫程式的過程。&lt;/p></description><content:encoded>&lt;p>2021 年底，我開始思考什麼是「開心地寫程式」這件事情，如果單純是興趣也不跟其他人合作，那麼是很容易的。然而，如果想要將寫程式作為工作，就一定會面臨到跟其他人協力的問題，很多時候會是我們抱怨「寫這段程式的人在想什麼」的原因。&lt;/p>
+&lt;p>也就是說，如果能讓眾多的初階開發者（Junior Developer）寫出更好的程式，那麼對所有人來說都能夠更加專注在享受寫程式的過程。&lt;/p>
+&lt;h2 id="myth">技術迷思&lt;/h2>
+&lt;p>我曾經有過認為擁有好的技術等於擁有寫好程式的能力。然而，技術這一個詞彙太過於含糊，我們很難明確的界定怎樣的技術是具備寫好程式的。&lt;/p>
+&lt;p>舉例來說，一個人實現想法的速度非常快，我們可能會覺得他的「技術很好」自然就覺得對方可能是一名優秀的工程師。不過，這也可能是他將寫測試、設計架構等等問題作為代價，換來極佳的開發速度。&lt;/p>
+&lt;p>正因如此，我們該重新思考一遍什麼是「寫好程式」的能力是怎樣的。我很喜歡在 Clean Architecture 書中對軟體的定義「容易改變的（soft）產品（ware）」的這個說法，因為我們要思考的是，該如何設計出一個讓人樂於維護的產品。&lt;/p>
+&lt;h2 id="programming-design">程式設計&lt;/h2>
+&lt;p>在軟體工程師的世界中，我們大多用「開發（Develop）」來形容我們工作的形式，然而我們所學的是程式設計這個「設計」到哪裡去了呢？&lt;/p>
+&lt;p>因為商業上的需求，我們不斷的被向前推進，為了能夠前進我們發展出強大的「開發」能力，卻逐漸遺忘了「設計」的重要性，正因如此我們才需要重新回顧設計所給予我們的東西。&lt;/p>
+&lt;p>一個「產品」在軟體的世界中是怎樣的？當我們跟著教科書、線上課程、程式營學習「物件導向」時，隨意地將一些事物分類（Class）然後對這些類別進行抽象化，但這真的能夠與現實世界的產品連結起來嗎？&lt;/p>
+&lt;p>我們該思考，當一個「產品」被抽象化成概念轉換為軟體後，該如何劃分出他們的「類型（Class）」並且根據我們所知的資訊，轉變成一個能夠反映商業目的的「模型（Model）」&lt;/p>
+&lt;h2 id="to-everyone">給所有人&lt;/h2>
+&lt;p>這一系列是寫給所有人的文章，我透過自身開發的經驗，將許多軟體開發中複雜的概念抽離，精心挑選一套「馬上能用」的技巧組合，讓所有人都能夠透過這些技巧更好的撰寫程式。&lt;/p>
+&lt;p>我們將會從一個「產品需求」開始進行探索，並且一步步的將這個未知的黑箱打開，再逐步的思考如何建構「模型」來重現這個需求。雖然無法詳細的講述所有細節，但他是一個經過設計的開發流程，可以幫助你有系統的實現一個功能。&lt;/p>
+&lt;p>那麼，期待有一天我能看到更多人可以享受軟體開發的樂趣。&lt;/p></content:encoded><media:content url="https://blog.aotoki.me/cover/2023-rails-in-practice.jpg" type="image/jpeg" medium="image"/></item></channel></rss>

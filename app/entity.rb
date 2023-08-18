@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# :nodoc:
 class Post
   attr_reader :id, :title, :link, :published_at
 

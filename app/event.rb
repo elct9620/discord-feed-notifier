@@ -8,7 +8,7 @@ class ScheduleEvent
 
   def initialize(event)
     @id = event['executionId']
-    @time = Time.parse(event['scheduledTime'])
+    @time = Time.zone.parse(event['scheduledTime'])
     @feed = event['feed']
     @webhook = event['webhook']
   end
