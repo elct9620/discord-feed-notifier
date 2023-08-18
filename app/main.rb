@@ -18,12 +18,17 @@ class App
   end
 
   def call
-    end_at = event.time.beginning_of_hour
-    start_at = end_at - 1.day
-
     posts = feed.list_between(event.uri, start_at, end_at)
     builders = posts.map { |post| service.to_builder(post) }
     builders.each { |builder| discord.execute(builder) }
+  end
+
+  def end_at
+    event.time.beginning_of_hour
+  end
+
+  def start_at
+    end_at - event.duration
   end
 
   def discord

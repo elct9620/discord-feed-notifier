@@ -24,6 +24,7 @@ RSpec.describe 'main.lambda_handler' do
   subject(:response) { lambda_handler(event: event, context: context) }
 
   it { is_expected.to be_a(Array) }
+  it { is_expected.to have_attributes(size: 1) }
   it { is_expected.to include(have_attributes(content: /資料跟資訊的差異 - Rails 開發實踐/)) }
   it { is_expected.to include(have_attributes(content: %r{https://blog.aotoki.me/posts/2023/08/18/rails-in-practice-data-and-information})) }
 end

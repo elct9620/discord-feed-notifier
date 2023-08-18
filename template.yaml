@@ -20,6 +20,10 @@ Parameters:
     Type: String
     Default: "Asia/Taipei"
     Description: The event bridge schedule timezone
+  Duration:
+    Type: String
+    Default: "P1D"
+    Description: The filter duration based on ISO8601 Duration format
   Feed:
     Type: String
     Default: "https://blog.aotoki.me/index.xml"
@@ -50,6 +54,7 @@ Resources:
                 "scheduledTime": "<aws.scheduler.scheduled-time>",
                 "timezone": "${Timezone}",
                 "attempt": "<aws.scheduler.attempt-number>",
+                "duration": "${Duration}",
                 "feed": "${Feed}",
                 "webhook": "${Webhook}"
               }
