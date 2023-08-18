@@ -9,8 +9,16 @@ require_relative 'event'
 require_relative 'repository'
 require_relative 'service'
 
+Time.zone = ENV.fetch('TZ', 'Asia/Taipei')
+
 # :nodoc:
 class App
+  class << self
+    def call(**args)
+      new(**args).call
+    end
+  end
+
   attr_reader :event
 
   def initialize(event:, **_args)
@@ -45,8 +53,7 @@ class App
 end
 
 def lambda_handler(event:, **_args)
-  Time.zone = event['timezone'] || 'Asia/Taipei'
   event = ScheduleEvent.new(event)
 
-  App.new(event: event).call
+  App.call(event: event)
 end

@@ -42,6 +42,9 @@ Resources:
       Runtime: ruby3.2
       Architectures:
         - x86_64
+      Environment:
+        Variables:
+          TZ: !Ref Timezone
       Events:
         ScheduleEvent:
           Type: ScheduleV2
@@ -52,7 +55,6 @@ Resources:
               {
                 "executionId": "<aws.scheduler.execution-id>",
                 "scheduledTime": "<aws.scheduler.scheduled-time>",
-                "timezone": "${Timezone}",
                 "attempt": "<aws.scheduler.attempt-number>",
                 "duration": "${Duration}",
                 "feed": "${Feed}",
