@@ -14,7 +14,7 @@ Globals:
 Parameters:
   Schedule:
     Type: String
-    Default: "cron(0 9 * * * *)"
+    Default: "cron(0 9 * * ? *)"
     Description: The event bridge schedule expression to trigger notifier
   Timezone:
     Type: String
