@@ -18,4 +18,5 @@ RSpec.describe 'main.lambda_handler' do
   subject(:response) { lambda_handler(event: event, context: context) }
 
   it { is_expected.to be_a(Array) }
+  it { is_expected.to include(Post) }
 end
