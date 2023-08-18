@@ -48,6 +48,7 @@ Resources:
               {
                 "executionId": "<aws.scheduler.execution-id>",
                 "scheduledTime": "<aws.scheduler.scheduled-time>",
+                "timezone": "${Timezone}",
                 "attempt": "<aws.scheduler.attempt-number>",
                 "feed": "${Feed}",
                 "webhook": "${Webhook}"
