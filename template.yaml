@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Discord News Notifier
+
+  Send RSS feed via Discord webhook
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+
+Parameters:
+  Schedule:
+    Type: String
+    Default: "cron(0 9 * * * *)"
+    Description: The event bridge schedule expression to trigger notifier
+  Timezone:
+    Type: String
+    Default: "Asia/Taipei"
+    Description: The event bridge schedule timezone
+  Feed:
+    Type: String
+    Default: "https://blog.aotoki.me/index.xml"
+    Description: The feed to check for news
+  Webhook:
+    Type: String
+    Description: The Discord webhook url to send notify
+
+Resources:
+  NotifyFunction:
+    Type: AWS::Serverless::Function
+    Name: "discord-news-notifier"
+    Properties:
+      CodeUri: app/
+      Handler: main.lambda_handler
+      Runtime: ruby3.2
+      Architectures:
+        - x86_64
+      Events:
+        ScheduleEvent:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: !Ref Schedule
+            ScheduleExpressionTimezone: !Ref Timezone
+            Input: !Sub |
+              {
+                "executionId": "<aws.scheduler.execution-id>",
+                "scheduledTime": "<aws.scheduler.scheduled-time>",
+                "attempt": "<aws.scheduler.attempt-number>",
+                "feed": "${Feed}",
+                "webhook": "${Webhook}"
+              }
+
+Outputs:
+  NotifyFunction:
+    Description: "Notify Lambda Function ARN"
+    Value: !GetAtt NotifyFunction.Arn
+  NotifyFunctionIamRole:
+    Description: "Implicit IAM Role created for notify function"
+    Value: !GetAtt NotifyFunctionRole.Arn
