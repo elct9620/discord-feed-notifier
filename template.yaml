@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Discord News Notifier
+  Discord Feed Notifier
 
   Send RSS feed via Discord webhook
 
@@ -27,7 +27,7 @@ Parameters:
   Feed:
     Type: String
     Default: "https://blog.aotoki.me/index.xml"
-    Description: The feed to check for news
+    Description: The feed to check
   Webhook:
     Type: String
     Description: The Discord webhook url to send notify
@@ -35,7 +35,7 @@ Parameters:
 Resources:
   NotifyFunction:
     Type: AWS::Serverless::Function
-    Name: "discord-news-notifier"
+    Name: "discord-feed-notifier"
     Properties:
       CodeUri: app/
       Handler: main.lambda_handler
