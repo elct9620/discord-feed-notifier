@@ -45,6 +45,7 @@ Resources:
       Environment:
         Variables:
           TZ: !Ref Timezone
+          AWS_LAMBDA_EXEC_WRAPPER: /var/task/bin/wrapper
       Events:
         ScheduleEvent:
           Type: ScheduleV2
