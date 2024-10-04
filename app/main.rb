@@ -14,8 +14,8 @@ Time.zone = ENV.fetch('TZ', 'Asia/Taipei')
 # :nodoc:
 class App
   class << self
-    def call(**args)
-      new(**args).call
+    def call(**)
+      new(**).call
     end
   end
 
@@ -55,5 +55,5 @@ end
 def lambda_handler(event:, **_args)
   event = ScheduleEvent.new(event)
 
-  App.call(event: event)
+  App.call(event:)
 end
